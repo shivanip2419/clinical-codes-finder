@@ -19,7 +19,7 @@ def infer_systems(query: str) -> List[SystemName]:
         systems.append("HCPCS")
     if re.search(r"\bataxia\b|\bphenotype\b|\bsymptom\b", q):
         systems.append("HPO")
-    if re.search(r"\bdiabetes\b|\btuberculosis\b|\bdisease\b|\bdiagnosis\b", q):
+    if re.search(r"\bdiabetes\b|\btuberculosis\b|\bdisease\b|\bdiagnosis\b|\bcancer\b", q):
         systems.append("ICD10CM")
 
     if not systems:

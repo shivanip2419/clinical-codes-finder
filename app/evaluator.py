@@ -15,12 +15,16 @@ def should_continue(state: AgentState) -> Literal["sanitize", "refine"]:
     if iteration >= MAX_ITERATIONS:
         return "sanitize"
         
+    systems = state.get("systems", [])
     raw_results = state.get("raw_results", {})
     
-    # Are there any results at all?
-    has_results = any(len(items) > 0 for items in raw_results.values())
+    # Did any of the expected systems fail to return results?
+    has_missing_system = any(
+        sys in systems and not raw_results.get(sys)
+        for sys in systems
+    )
     
-    if not has_results:
+    if has_missing_system:
         return "refine"
         
     return "sanitize"
