@@ -1,4 +1,7 @@
+import os
+import json
 from typing import List
+from openai import OpenAI
 
 from langgraph.graph import END, StateGraph
 
@@ -15,31 +18,89 @@ from app.refiner import refine_node
 
 
 def intent_node(state: AgentState) -> AgentState:
-    systems = infer_systems(state["query"])
+    query = state["query"]
+    api_key = os.getenv("OPENAI_API_KEY", "").strip()
+    
+    systems = []
+    confidence = 0.5
+    
+    if api_key:
+        client = OpenAI(api_key=api_key)
+        prompt = f"""
+Analyze this clinical query: "{query}"
+
+Return a JSON object with:
+1. "systems": A list of relevant databases (choose exactly from: ICD10CM, LOINC, RXTERMS, HCPCS, UCUM, HPO).
+2. "confidence": A float from 0.0 to 1.0 indicating how confident you are in this mapping.
+
+Only output valid JSON, no markdown formatting.
+"""
+        try:
+            response = client.chat.completions.create(
+                model="gpt-4o-mini",
+                messages=[{"role": "user", "content": prompt}],
+                temperature=0.0
+            )
+            text = response.choices[0].message.content.strip()
+            if text.startswith("```json"): text = text[7:]
+            if text.startswith("```"): text = text[3:]
+            if text.endswith("```"): text = text[:-3]
+            
+            data = json.loads(text.strip())
+            extracted_sys = data.get("systems", [])
+            valid = {"ICD10CM", "LOINC", "RXTERMS", "HCPCS", "UCUM", "HPO"}
+            systems = [s for s in extracted_sys if s in valid]
+            confidence = float(data.get("confidence", 0.5))
+        except Exception:
+            systems = infer_systems(query)
+    else:
+        systems = infer_systems(query)
+        
+    if not systems:
+        systems = ["ICD10CM", "LOINC", "RXTERMS"]
+
     state["systems"] = systems
-    state["trace"] = {"systems_selected": systems}
+    state["confidence"] = confidence
+    state["iteration"] = 0
+    state["trace"] = {"systems_selected": systems, "confidence": confidence}
     return state
 
 
 def plan_node(state: AgentState) -> AgentState:
     state["search_terms"] = build_search_terms(state["query"], state["systems"])
+    conf = state.get("confidence", 0.5)
+    
+    # Dynamic thresholds based on AI certainty
+    if conf >= 0.85:
+        state["max_per_system"] = 3
+    else:
+        state["max_per_system"] = 10
+        
+    state["trace"]["max_per_system"] = state["max_per_system"]
     return state
 
 
 def call_tools_node(state: AgentState) -> AgentState:
     all_items = []
     calls_made = 0
+    limit = state.get("max_per_system", 5)
+    fetch_limit = limit + 7
+    
     for system in state["systems"]:
-        term = state["search_terms"][system]
+        term = state["search_terms"].get(system)
+        if not term: 
+            continue
         try:
-            items = search_system(system, term, max_list=12)
+            items = search_system(system, term, max_list=fetch_limit)
             all_items.extend(items)
             calls_made += 1
         except Exception:
             continue
+            
     grouped = group_by_system(all_items)
     for system, items in grouped.items():
-        grouped[system] = rank_results(state["query"], items, top_k=5)
+        grouped[system] = rank_results(state["query"], items, top_k=limit)
+        
     state["raw_results"] = grouped
     state["trace"]["calls_made"] = calls_made
     return state

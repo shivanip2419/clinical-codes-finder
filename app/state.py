@@ -11,3 +11,5 @@ class AgentState(TypedDict):
     summary: str
     trace: Dict[str, object]
     iteration: int
+    confidence: float
+    max_per_system: int
