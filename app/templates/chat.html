@@ -1,0 +1,28 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>Clinical Codes Chatbot</title>
+    <link rel="stylesheet" href="/static/chat.css" />
+  </head>
+  <body>
+    <div class="wrap">
+      <div class="chat-shell">
+        <div class="topbar">
+          <div class="title">Clinical Codes Chatbot</div>
+          <div class="hint"></div>
+        </div>
+        <div id="messages" class="messages"></div>
+        <div class="composer">
+          <input id="query" placeholder="Ask for a clinical code..." />
+          <button id="send">Send</button>
+        </div>
+      </div>
+    </div>
+    <script>
+      window.APP_CONFIG = __APP_CONFIG_JSON__;
+    </script>
+    <script src="/static/chat.js"></script>
+  </body>
+</html>
