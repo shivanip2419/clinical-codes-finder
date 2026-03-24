@@ -1,5 +1,6 @@
 import os
 import json
+import concurrent.futures
 from typing import List
 from openai import OpenAI
 
@@ -86,16 +87,22 @@ def call_tools_node(state: AgentState) -> AgentState:
     limit = state.get("max_per_system", 5)
     fetch_limit = limit + 7
     
-    for system in state["systems"]:
-        term = state["search_terms"].get(system)
+    def fetch_for_system(system_name):
+        term = state["search_terms"].get(system_name)
         if not term: 
-            continue
+            return None
         try:
-            items = search_system(system, term, max_list=fetch_limit)
-            all_items.extend(items)
-            calls_made += 1
+            return search_system(system_name, term, max_list=fetch_limit)
         except Exception:
-            continue
+            return None
+
+    with concurrent.futures.ThreadPoolExecutor(max_workers=5) as executor:
+        futures = [executor.submit(fetch_for_system, sys) for sys in state["systems"]]
+        for future in concurrent.futures.as_completed(futures):
+            items = future.result()
+            if items is not None:
+                all_items.extend(items)
+                calls_made += 1
             
     grouped = group_by_system(all_items)
     for system, items in grouped.items():
