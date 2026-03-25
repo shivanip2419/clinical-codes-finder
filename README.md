@@ -54,9 +54,9 @@ curl -X POST http://127.0.0.1:8000/find-codes \
 
 ## Notes
 
-- The graph has nodes for intent -> plan -> tool calls -> sanitize -> summary.
+- The graph has nodes for intent -> plan -> tool calls -> refine -> sanitize -> summary.
 - If no OpenAI key is present, summarization falls back to a deterministic text summary.
-- Ranking is a starter heuristic and can be improved for better relevance.
+- Ranking includes advanced query expansion and phrase boosting for higher relevance.
 - Chatbot-style UI is available at `/`.
 - Query normalization includes generalized typo handling with a controlled vocabulary.
 - Potential PII/PHI in result text is masked before summarization/output.
