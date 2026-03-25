@@ -1,8 +1,7 @@
 import os
 import json
-import concurrent.futures
-from typing import List
-from openai import OpenAI
+import asyncio
+from openai import AsyncOpenAI
 
 from langgraph.graph import END, StateGraph
 
@@ -18,7 +17,7 @@ from app.evaluator import should_continue
 from app.refiner import refine_node
 
 
-def intent_node(state: AgentState) -> AgentState:
+async def intent_node(state: AgentState) -> AgentState:
     query = state["query"]
     api_key = os.getenv("OPENAI_API_KEY", "").strip()
     
@@ -26,7 +25,7 @@ def intent_node(state: AgentState) -> AgentState:
     confidence = 0.5
     
     if api_key:
-        client = OpenAI(api_key=api_key)
+        client = AsyncOpenAI(api_key=api_key)
         prompt = f"""
 Analyze this clinical query: "{query}"
 
@@ -37,7 +36,7 @@ Return a JSON object with:
 Only output valid JSON, no markdown formatting.
 """
         try:
-            response = client.chat.completions.create(
+            response = await client.chat.completions.create(
                 model="gpt-4o-mini",
                 messages=[{"role": "user", "content": prompt}],
                 temperature=0.0
@@ -67,7 +66,7 @@ Only output valid JSON, no markdown formatting.
     return state
 
 
-def plan_node(state: AgentState) -> AgentState:
+async def plan_node(state: AgentState) -> AgentState:
     state["search_terms"] = build_search_terms(state["query"], state["systems"])
     conf = state.get("confidence", 0.5)
     
@@ -81,28 +80,28 @@ def plan_node(state: AgentState) -> AgentState:
     return state
 
 
-def call_tools_node(state: AgentState) -> AgentState:
+async def call_tools_node(state: AgentState) -> AgentState:
     all_items = []
     calls_made = 0
     limit = state.get("max_per_system", 5)
     fetch_limit = limit + 7
     
-    def fetch_for_system(system_name):
+    async def fetch_for_system(system_name):
         term = state["search_terms"].get(system_name)
         if not term: 
             return None
         try:
-            return search_system(system_name, term, max_list=fetch_limit)
+            return await search_system(system_name, term, max_list=fetch_limit)
         except Exception:
             return None
 
-    with concurrent.futures.ThreadPoolExecutor(max_workers=5) as executor:
-        futures = [executor.submit(fetch_for_system, sys) for sys in state["systems"]]
-        for future in concurrent.futures.as_completed(futures):
-            items = future.result()
-            if items is not None:
-                all_items.extend(items)
-                calls_made += 1
+    futures = [fetch_for_system(sys) for sys in state["systems"]]
+    results = await asyncio.gather(*futures, return_exceptions=True)
+    
+    for items in results:
+        if isinstance(items, list):
+            all_items.extend(items)
+            calls_made += 1
             
     grouped = group_by_system(all_items)
     for system, items in grouped.items():
@@ -113,12 +112,12 @@ def call_tools_node(state: AgentState) -> AgentState:
     return state
 
 
-def summarize_node(state: AgentState) -> AgentState:
-    state["summary"] = summarize_results(state["query"], state["raw_results"])
+async def summarize_node(state: AgentState) -> AgentState:
+    state["summary"] = await summarize_results(state["query"], state["raw_results"])
     return state
 
 
-def sanitize_node(state: AgentState) -> AgentState:
+async def sanitize_node(state: AgentState) -> AgentState:
     # Ensure potentially sensitive text is masked before downstream phases.
     state["raw_results"] = redact_results(state["raw_results"])
     return state

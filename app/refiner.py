@@ -1,12 +1,12 @@
 import os
 import json
 
-from openai import OpenAI
+from openai import AsyncOpenAI
 
 from app.state import AgentState
 
 
-def refine_node(state: AgentState) -> AgentState:
+async def refine_node(state: AgentState) -> AgentState:
     """
     Called when results are completely empty or poor.
     Uses LLM to suggest broader or alternate search terms.
@@ -19,7 +19,7 @@ def refine_node(state: AgentState) -> AgentState:
     if not api_key:
         return state
         
-    client = OpenAI(api_key=api_key)
+    client = AsyncOpenAI(api_key=api_key)
     
     query = state.get("query", "")
     systems = state.get("systems", [])
@@ -38,7 +38,7 @@ Do not wrap it in markdown block. Just standard JSON output.
 """
     
     try:
-        response = client.chat.completions.create(
+        response = await client.chat.completions.create(
             model="gpt-4o-mini",
             messages=[{"role": "user", "content": prompt}],
             temperature=0.2,

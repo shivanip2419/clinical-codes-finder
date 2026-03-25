@@ -274,7 +274,7 @@ def _dedupe_by_code(items: List[CodeResult]) -> List[CodeResult]:
     return list(deduped.values())
 
 
-def search_system(system: SystemName, term: str, max_list: int = 10) -> List[CodeResult]:
+async def search_system(system: SystemName, term: str, max_list: int = 10) -> List[CodeResult]:
     url = API_URLS[system]
     normalized = _normalize_term_for_system(system, term)
     candidate_terms = [term]
@@ -302,7 +302,7 @@ def search_system(system: SystemName, term: str, max_list: int = 10) -> List[Cod
     candidate_terms = deduped
 
     collected: List[CodeResult] = []
-    with httpx.Client(timeout=15.0) as client:
+    async with httpx.AsyncClient(timeout=15.0) as client:
         for candidate in candidate_terms:
             base_params = {"terms": candidate, "maxList": max_list}
             param_variants = SYSTEM_PARAM_VARIANTS.get(system, [])
@@ -310,7 +310,7 @@ def search_system(system: SystemName, term: str, max_list: int = 10) -> List[Cod
             for variant in [*param_variants, {}]:
                 params = {**base_params, **variant}
                 try:
-                    response = client.get(url, params=params)
+                    response = await client.get(url, params=params)
                     response.raise_for_status()
                 except Exception:
                     # Some endpoints reject unknown df fields; keep trying fallbacks.

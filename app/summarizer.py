@@ -1,7 +1,7 @@
 import os
 from typing import Dict, List
 
-from openai import OpenAI
+from openai import AsyncOpenAI
 
 from app.models import CodeResult
 
@@ -13,12 +13,12 @@ def _fallback_summary(query: str, grouped: Dict[str, List[CodeResult]]) -> str:
     return f"Top matches for '{query}' were found in: {systems}."
 
 
-def summarize_results(query: str, grouped: Dict[str, List[CodeResult]]) -> str:
+async def summarize_results(query: str, grouped: Dict[str, List[CodeResult]]) -> str:
     api_key = os.getenv("OPENAI_API_KEY", "").strip()
     if not api_key:
         return _fallback_summary(query, grouped)
 
-    client = OpenAI(api_key=api_key)
+    client = AsyncOpenAI(api_key=api_key)
     compact = {
         system: [
             {"code": item.code, "display": item.display, "score": item.score}
@@ -32,12 +32,12 @@ def summarize_results(query: str, grouped: Dict[str, List[CodeResult]]) -> str:
         f"Query: {query}\nResults: {compact}"
     )
     try:
-        response = client.responses.create(
+        response = await client.chat.completions.create(
             model="gpt-4o-mini",
-            input=prompt,
+            messages=[{"role": "user", "content": prompt}],
             temperature=0.1,
         )
-        text = response.output_text.strip()
+        text = response.choices[0].message.content.strip()
         return text or _fallback_summary(query, grouped)
     except Exception:
         # Network/proxy/API errors should not break the endpoint.

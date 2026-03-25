@@ -7,9 +7,9 @@ from app.models import CodeResult
 _COMPILED_GRAPH = build_graph()
 
 
-def run_code_finder(query: str) -> Dict[str, object]:
+async def run_code_finder(query: str) -> Dict[str, object]:
     state = default_initial_state(query)
-    final_state = _COMPILED_GRAPH.invoke(state)
+    final_state = await _COMPILED_GRAPH.ainvoke(state)
     return final_state
 
 

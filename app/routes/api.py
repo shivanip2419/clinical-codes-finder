@@ -7,13 +7,13 @@ router = APIRouter()
 
 
 @router.get("/health")
-def health() -> dict:
+async def health() -> dict:
     return {"ok": True}
 
 
 @router.post("/find-codes", response_model=FindCodesResponse)
-def find_codes(request: FindCodesRequest) -> FindCodesResponse:
-    final_state = run_code_finder(request.query)
+async def find_codes(request: FindCodesRequest) -> FindCodesResponse:
+    final_state = await run_code_finder(request.query)
     return FindCodesResponse(
         query=request.query,
         results_by_system=final_state["raw_results"],

@@ -19,7 +19,7 @@ def _load_template() -> str:
 
 
 @router.get("/", response_class=HTMLResponse)
-def home() -> HTMLResponse:
+async def home() -> HTMLResponse:
     template = _load_template()
     html = template.replace("__APP_CONFIG_JSON__", json.dumps(CHAT_UI_CONFIG))
     return HTMLResponse(content=html)
