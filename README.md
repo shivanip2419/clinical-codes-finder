@@ -89,8 +89,8 @@ OPENAI_API_KEY='' PYTHONPATH=. pytest -q
 | --- | --- | --- |
 | `diabetes` | ICD-10-CM | ICD10CM |
 | `glucose test` | LOINC | LOINC |
-| `metformin 500 mg` | RxTerms / RxNorm | RXTERMS (and UCUM selected) |
+| `metformin 500 mg` | RxTerms / RxNorm | RXTERMS |
 | `wheelchair` | HCPCS | HCPCS |
-| `mg/dL` | UCUM | UCUM (and RXTERMS selected) |
+| `mg/dL` | UCUM | UCUM |
 | `ataxia` | HPO | HPO |
 | `tuberculosis` | ICD-10-CM | ICD10CM |
