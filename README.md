@@ -2,6 +2,9 @@
 
 Agentic clinical coding search across ICD-10-CM, LOINC, RxTerms, HCPCS, UCUM, and HPO using Clinical Tables APIs.
 
+**🎥 [Watch the Demo Video on Loom](https://www.loom.com/share/58b7e0d7922144d995c64fd75c567b68)**
+
+
 ## Key Features
 - **Agentic RAG Engine**: LangGraph workflow with an LLM refiner node to self-correct searches if they fail.
 - **Premium Visual Design**: An intuitive chat interface built with modern CSS glassmorphism.
