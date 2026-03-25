@@ -2,6 +2,12 @@
 
 Agentic clinical coding search across ICD-10-CM, LOINC, RxTerms, HCPCS, UCUM, and HPO using Clinical Tables APIs.
 
+## Key Features
+- **Agentic RAG Engine**: LangGraph workflow with an LLM refiner node to self-correct searches if they fail.
+- **Premium Visual Design**: An intuitive chat interface built with modern CSS glassmorphism.
+- **Fully Asynchronous Execution**: High-concurrency scaling using `asyncio` for parallel API and LLM operations.
+- **Dynamic Control Flow**: Automatically restricts or broadens API result volume based on the LLM's confidence score.
+
 ## 1) Setup
 
 ```bash
